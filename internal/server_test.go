@@ -167,25 +167,21 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 		clientCount uint8
 		emptySlots  []uint8
 		wantClient  client
-		wantSlot    int
 	}{
 		"Add client at idx '0' Ok": {
 			clientCount: 10,
 			emptySlots:  []uint8{0, 1},
 			wantClient:  client{id: 0},
-			wantSlot:    0,
 		},
 		"Add client at idx '1' Ok": {
 			clientCount: 10,
 			emptySlots:  []uint8{1, 2, 3},
 			wantClient:  client{id: 1},
-			wantSlot:    1,
 		},
 		"Add client at idx '50' Ok": {
 			clientCount: 100,
 			emptySlots:  []uint8{50, 91},
 			wantClient:  client{id: 50},
-			wantSlot:    50,
 		},
 	}
 	for name, c := range cases {
@@ -207,7 +203,6 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 			}
 
 			if client.id != c.wantClient.id {
-				// if client.id != c.wantClient.id || srv.slots[c.wantSlot] != false {
 				t.Errorf("received client has an unexpected ID;\ngot: %d\nwant: %d\nclients: %v", client.id, c.wantClient.id, srv.clients)
 			}
 		})

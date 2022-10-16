@@ -1,8 +1,20 @@
 package internal
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"net"
+	"os"
+
+	log "github.com/sirupsen/logrus"
+)
 
 const MAX_CLIENTS = 256
+
+var (
+	ErrStartServer      = errors.New("unable to start server")
+	ErrAcceptConnection = errors.New("unable to accept connection")
+)
 
 type client struct {
 	id uint8
@@ -18,16 +30,36 @@ type Server struct {
 }
 
 func NewServer() Server {
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.DebugLevel)
+
 	slots := make([]bool, MAX_CLIENTS)
 	for i := 0; i < MAX_CLIENTS; i++ {
-		// for i := 0; i < 256; i++ {
 		slots[i] = true
 	}
 	return Server{slots: slots}
 }
 
-func (srv *Server) Run() {
-	// TODO all the logic of handling requests should go here
+func (srv *Server) Run() error {
+	listener, err := net.Listen("tcp", "0:7654")
+	if err != nil {
+		return fmt.Errorf("%s: %s\n", ErrStartServer, err)
+	}
+
+	running := true
+	for running {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Errorf("%s: %s\n", ErrAcceptConnection, err)
+		}
+		log.Infof("received a new connection: %v\n", conn)
+	}
+
+	listener.Close()
+	return nil
 }
 
 func (srv *Server) Stop() {
