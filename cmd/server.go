@@ -7,8 +7,5 @@ import (
 func main() {
 	srv := internal.NewServer()
 
-	err := srv.Run()
-	if err != nil {
-		panic(err)
-	}
+	srv.Run()
 }

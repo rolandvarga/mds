@@ -14,19 +14,23 @@ const MAX_CLIENTS = 256
 var (
 	ErrStartServer      = errors.New("unable to start server")
 	ErrAcceptConnection = errors.New("unable to accept connection")
+	ErrAddClient        = errors.New("unable to add client")
 )
 
 type client struct {
-	id uint8
+	id   uint8
+	conn net.Conn
 }
 
-func newClient(id uint8) client {
-	return client{id: id}
+func newClient(id uint8, conn net.Conn) client {
+	return client{id: id, conn: conn}
 }
 
 type Server struct {
 	clients []client
 	slots   []bool
+	ErrChan chan error
+	Done    bool
 }
 
 func NewServer() Server {
@@ -36,17 +40,19 @@ func NewServer() Server {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
 
+	errChan := make(chan error)
+
 	slots := make([]bool, MAX_CLIENTS)
 	for i := 0; i < MAX_CLIENTS; i++ {
 		slots[i] = true
 	}
-	return Server{slots: slots}
+	return Server{slots: slots, ErrChan: errChan, Done: false}
 }
 
-func (srv *Server) Run() error {
+func (srv *Server) Run() {
 	listener, err := net.Listen("tcp", "0:7654")
 	if err != nil {
-		return fmt.Errorf("%s: %s\n", ErrStartServer, err)
+		srv.ErrChan <- fmt.Errorf("%s: %s\n", ErrStartServer, err)
 	}
 
 	running := true
@@ -55,11 +61,21 @@ func (srv *Server) Run() error {
 		if err != nil {
 			log.Errorf("%s: %s\n", ErrAcceptConnection, err)
 		}
-		log.Infof("received a new connection: %v\n", conn)
+		log.Infof("received a new connection: %v %v\n", conn, conn.RemoteAddr())
+
+		client, err := srv.addClient(conn)
+		if err != nil {
+			log.Errorf("%s: %s\n", ErrAddClient, err)
+			conn.Write([]byte("server is unable to add client add this time\n"))
+			conn.Close()
+		}
+
+		// respond to client
+		client.conn.Write([]byte(fmt.Sprintf("welcome! Your client id is %d\n", client.id)))
 	}
 
 	listener.Close()
-	return nil
+	srv.Done = true
 }
 
 func (srv *Server) Stop() {
@@ -67,10 +83,10 @@ func (srv *Server) Stop() {
 }
 
 // TODO if we hit max clients then we should check for dead clients
-func (srv *Server) addClient() (client, error) {
+func (srv *Server) addClient(conn net.Conn) (client, error) {
 	for idx, slot := range srv.slots {
 		if slot == true {
-			client := newClient(uint8(idx))
+			client := newClient(uint8(idx), conn)
 
 			srv.clients = append(srv.clients, client)
 			srv.slots[idx] = false
