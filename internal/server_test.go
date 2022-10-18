@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"net"
 	"reflect"
 	"testing"
 )
@@ -142,12 +143,18 @@ func TestAddClientOverflow(t *testing.T) {
 
 			for id := 0; id <= int(c.clientCount); id++ {
 				srv.clients = append(srv.clients, client{id: uint8(id)})
+				srv.slots[id] = false
 			}
 
-			client, err := srv.addClient()
+			// create a pipe so that a connection can be passed to the client
+			serverConn, clientConn := net.Pipe()
+
+			client, err := srv.addClient(clientConn)
 			if err != nil && c.wantError != true {
 				t.Errorf("received an unexpected error: %v\nclient: %v\nclients: %v", err, client, srv.clients)
 			}
+			serverConn.Close()
+			clientConn.Close()
 		})
 	}
 }
@@ -197,7 +204,10 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 				}
 			}
 
-			client, err := srv.addClient()
+			// create a pipe so that a connection can be passed to the client
+			serverConn, clientConn := net.Pipe()
+
+			client, err := srv.addClient(clientConn)
 			if err != nil {
 				t.Errorf("received an unexpected error while adding client: %v\n", err)
 			}
@@ -205,6 +215,8 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 			if client.id != c.wantClient.id {
 				t.Errorf("received client has an unexpected ID;\ngot: %d\nwant: %d\nclients: %v", client.id, c.wantClient.id, srv.clients)
 			}
+			serverConn.Close()
+			clientConn.Close()
 		})
 	}
 }
