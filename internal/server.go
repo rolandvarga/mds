@@ -17,6 +17,13 @@ var (
 	ErrAddClient        = errors.New("unable to add client")
 )
 
+type slot int
+
+const (
+	available slot = iota
+	taken
+)
+
 type client struct {
 	id   uint8
 	conn net.Conn
@@ -28,7 +35,7 @@ func newClient(id uint8, conn net.Conn) client {
 
 type Server struct {
 	clients []client
-	slots   []bool
+	slots   []slot
 	ErrChan chan error
 	Done    bool
 }
@@ -42,9 +49,9 @@ func NewServer() Server {
 
 	errChan := make(chan error)
 
-	slots := make([]bool, MAX_CLIENTS)
+	slots := make([]slot, MAX_CLIENTS)
 	for i := 0; i < MAX_CLIENTS; i++ {
-		slots[i] = true
+		slots[i] = available
 	}
 	return Server{slots: slots, ErrChan: errChan, Done: false}
 }
@@ -85,11 +92,11 @@ func (srv *Server) Stop() {
 // TODO if we hit max clients then we should check for dead clients
 func (srv *Server) addClient(conn net.Conn) (client, error) {
 	for idx, slot := range srv.slots {
-		if slot == true {
+		if slot == available {
 			client := newClient(uint8(idx), conn)
 
 			srv.clients = append(srv.clients, client)
-			srv.slots[idx] = false
+			srv.slots[idx] = taken
 
 			return client, nil
 		}
@@ -115,7 +122,7 @@ func (srv *Server) removeClient(client uint8) error {
 	}
 
 	srv.clients = append(srv.clients[:removeIdx], srv.clients[removeIdx+1:]...)
-	srv.slots[removeIdx] = true
+	srv.slots[removeIdx] = available
 
 	return nil
 }

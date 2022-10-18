@@ -69,7 +69,7 @@ func TestRemoveClient(t *testing.T) {
 			srv := NewServer()
 			srv.clients = c.clientList
 			for _, c := range c.clientList {
-				srv.slots[c.id] = false
+				srv.slots[c.id] = taken
 			}
 
 			err := srv.removeClient(c.client)
@@ -112,7 +112,7 @@ func TestListClientsExcept(t *testing.T) {
 			srv := NewServer()
 			srv.clients = c.clientList
 			for _, c := range c.clientList {
-				srv.slots[c.id] = false
+				srv.slots[c.id] = taken
 			}
 
 			clients := srv.listClientIDsExcept(c.client)
@@ -143,7 +143,7 @@ func TestAddClientOverflow(t *testing.T) {
 
 			for id := 0; id <= int(c.clientCount); id++ {
 				srv.clients = append(srv.clients, client{id: uint8(id)})
-				srv.slots[id] = false
+				srv.slots[id] = taken
 			}
 
 			// create a pipe so that a connection can be passed to the client
@@ -200,7 +200,7 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 			for id := 0; id <= int(c.clientCount); id++ {
 				if !sliceContains(uint8(id), c.emptySlots) {
 					srv.clients = append(srv.clients, client{id: uint8(id)})
-					srv.slots[id] = false
+					srv.slots[id] = taken
 				}
 			}
 
