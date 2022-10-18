@@ -24,20 +24,21 @@ const (
 	taken
 )
 
-type client struct {
-	id   uint8
-	conn net.Conn
+type Client struct {
+	ID   uint8
+	Conn net.Conn
 }
 
-func newClient(id uint8, conn net.Conn) client {
-	return client{id: id, conn: conn}
+func newClient(id uint8, conn net.Conn) Client {
+	return Client{ID: id, Conn: conn}
 }
 
 type Server struct {
-	clients []client
-	slots   []slot
-	ErrChan chan error
-	Done    bool
+	listener net.Listener
+	clients  []Client
+	slots    []slot
+	ErrChan  chan error
+	Done     bool
 }
 
 func NewServer() Server {
@@ -62,9 +63,11 @@ func (srv *Server) Run() {
 		srv.ErrChan <- fmt.Errorf("%s: %s\n", ErrStartServer, err)
 	}
 
+	srv.listener = listener
+
 	running := true
 	for running {
-		conn, err := listener.Accept()
+		conn, err := srv.listener.Accept()
 		if err != nil {
 			log.Errorf("%s: %s\n", ErrAcceptConnection, err)
 		}
@@ -78,19 +81,20 @@ func (srv *Server) Run() {
 		}
 
 		// respond to client
-		client.conn.Write([]byte(fmt.Sprintf("welcome! Your client id is %d\n", client.id)))
+		client.Conn.Write([]byte(fmt.Sprintf("welcome! Your client id is %d\n", client.ID)))
 	}
 
-	listener.Close()
+	srv.listener.Close()
 	srv.Done = true
 }
 
 func (srv *Server) Stop() {
 	// TODO goodbye message to clients?
+	srv.listener.Close()
 }
 
 // TODO if we hit max clients then we should check for dead clients
-func (srv *Server) addClient(conn net.Conn) (client, error) {
+func (srv *Server) addClient(conn net.Conn) (Client, error) {
 	for idx, slot := range srv.slots {
 		if slot == available {
 			client := newClient(uint8(idx), conn)
@@ -101,7 +105,7 @@ func (srv *Server) addClient(conn net.Conn) (client, error) {
 			return client, nil
 		}
 	}
-	return client{}, fmt.Errorf("unable to add new client")
+	return Client{}, fmt.Errorf("unable to add new client")
 }
 
 // BUG there's a bug when removing non existent clients
@@ -110,7 +114,7 @@ func (srv *Server) removeClient(client uint8) error {
 	removeIdx := 0
 
 	for i, c := range srv.clients {
-		if c.id == client {
+		if c.ID == client {
 			found = true
 			removeIdx = i
 			break
@@ -130,13 +134,13 @@ func (srv *Server) removeClient(client uint8) error {
 func (srv *Server) listClientIDsExcept(id uint8) []uint8 {
 	out := []uint8{}
 	for _, client := range srv.clients {
-		if id != client.id {
-			out = append(out, client.id)
+		if id != client.ID {
+			out = append(out, client.ID)
 		}
 	}
 	return out
 }
 
-func (srv *Server) messageClients(message string, clients []client) error {
+func (srv *Server) messageClients(message string, clients []Client) error {
 	return nil
 }

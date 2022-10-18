@@ -10,54 +10,54 @@ func TestRemoveClient(t *testing.T) {
 	t.Parallel()
 	cases := map[string]struct {
 		client     uint8
-		clientList []client
-		want       []client
+		clientList []Client
+		want       []Client
 	}{
 		"Remove client Start": {
 			client: 0,
-			clientList: []client{
-				client{id: 0},
-				client{id: 1},
-				client{id: 2},
+			clientList: []Client{
+				Client{ID: 0},
+				Client{ID: 1},
+				Client{ID: 2},
 			},
-			want: []client{
-				client{id: 1},
-				client{id: 2},
+			want: []Client{
+				Client{ID: 1},
+				Client{ID: 2},
 			},
 		},
 		"Remove client Middle": {
 			client: 1,
-			clientList: []client{
-				client{id: 0},
-				client{id: 1},
-				client{id: 2},
+			clientList: []Client{
+				Client{ID: 0},
+				Client{ID: 1},
+				Client{ID: 2},
 			},
-			want: []client{
-				client{id: 0},
-				client{id: 2},
+			want: []Client{
+				Client{ID: 0},
+				Client{ID: 2},
 			},
 		},
 		"Remove client End": {
 			client: 2,
-			clientList: []client{
-				client{id: 0},
-				client{id: 1},
-				client{id: 2},
+			clientList: []Client{
+				Client{ID: 0},
+				Client{ID: 1},
+				Client{ID: 2},
 			},
-			want: []client{
-				client{id: 0},
-				client{id: 1},
+			want: []Client{
+				Client{ID: 0},
+				Client{ID: 1},
 			},
 		},
 		"Client not found": {
 			client: 0,
-			clientList: []client{
-				client{id: 1},
-				client{id: 2},
+			clientList: []Client{
+				Client{ID: 1},
+				Client{ID: 2},
 			},
-			want: []client{
-				client{id: 1},
-				client{id: 2},
+			want: []Client{
+				Client{ID: 1},
+				Client{ID: 2},
 			},
 		},
 	}
@@ -69,7 +69,7 @@ func TestRemoveClient(t *testing.T) {
 			srv := NewServer()
 			srv.clients = c.clientList
 			for _, c := range c.clientList {
-				srv.slots[c.id] = taken
+				srv.slots[c.ID] = taken
 			}
 
 			err := srv.removeClient(c.client)
@@ -92,15 +92,15 @@ func TestListClientsExcept(t *testing.T) {
 	t.Parallel()
 	cases := map[string]struct {
 		client     uint8
-		clientList []client
+		clientList []Client
 		want       []uint8
 	}{
 		"List clients Ok": {
 			client: 0,
-			clientList: []client{
-				client{id: 0},
-				client{id: 1},
-				client{id: 2},
+			clientList: []Client{
+				Client{ID: 0},
+				Client{ID: 1},
+				Client{ID: 2},
 			},
 			want: []uint8{1, 2},
 		},
@@ -112,7 +112,7 @@ func TestListClientsExcept(t *testing.T) {
 			srv := NewServer()
 			srv.clients = c.clientList
 			for _, c := range c.clientList {
-				srv.slots[c.id] = taken
+				srv.slots[c.ID] = taken
 			}
 
 			clients := srv.listClientIDsExcept(c.client)
@@ -142,7 +142,7 @@ func TestAddClientOverflow(t *testing.T) {
 			srv := NewServer()
 
 			for id := 0; id <= int(c.clientCount); id++ {
-				srv.clients = append(srv.clients, client{id: uint8(id)})
+				srv.clients = append(srv.clients, Client{ID: uint8(id)})
 				srv.slots[id] = taken
 			}
 
@@ -173,22 +173,22 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 	cases := map[string]struct {
 		clientCount uint8
 		emptySlots  []uint8
-		wantClient  client
+		wantClient  Client
 	}{
 		"Add client at idx '0' Ok": {
 			clientCount: 10,
 			emptySlots:  []uint8{0, 1},
-			wantClient:  client{id: 0},
+			wantClient:  Client{ID: 0},
 		},
 		"Add client at idx '1' Ok": {
 			clientCount: 10,
 			emptySlots:  []uint8{1, 2, 3},
-			wantClient:  client{id: 1},
+			wantClient:  Client{ID: 1},
 		},
 		"Add client at idx '50' Ok": {
 			clientCount: 100,
 			emptySlots:  []uint8{50, 91},
-			wantClient:  client{id: 50},
+			wantClient:  Client{ID: 50},
 		},
 	}
 	for name, c := range cases {
@@ -199,7 +199,7 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 
 			for id := 0; id <= int(c.clientCount); id++ {
 				if !sliceContains(uint8(id), c.emptySlots) {
-					srv.clients = append(srv.clients, client{id: uint8(id)})
+					srv.clients = append(srv.clients, Client{ID: uint8(id)})
 					srv.slots[id] = taken
 				}
 			}
@@ -212,8 +212,8 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 				t.Errorf("received an unexpected error while adding client: %v\n", err)
 			}
 
-			if client.id != c.wantClient.id {
-				t.Errorf("received client has an unexpected ID;\ngot: %d\nwant: %d\nclients: %v", client.id, c.wantClient.id, srv.clients)
+			if client.ID != c.wantClient.ID {
+				t.Errorf("received client has an unexpected ID;\ngot: %d\nwant: %d\nclients: %v", client.ID, c.wantClient.ID, srv.clients)
 			}
 			serverConn.Close()
 			clientConn.Close()
