@@ -81,7 +81,8 @@ func (srv *Server) Run() {
 		}
 
 		// respond to client
-		client.Conn.Write([]byte(fmt.Sprintf("welcome! Your client id is %d\n", client.ID)))
+		response := BuildIdentityResponse(client.ID)
+		client.Conn.Write(response)
 	}
 
 	srv.listener.Close()

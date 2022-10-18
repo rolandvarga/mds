@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github/rolandvarga/mds/internal"
-	"io"
 	"net"
 	"os"
 	"testing"
@@ -65,7 +64,7 @@ func TestServer(t *testing.T) {
 			t.Errorf("client couldn't request identity: %v\n", err)
 		}
 
-		buff := make([]byte, 50)
+		buff := make([]byte, 100)
 		reader := bufio.NewReader(c.Conn)
 
 		log.Info("before reading first byte")
@@ -74,8 +73,11 @@ func TestServer(t *testing.T) {
 			t.Errorf("error reading response size: %v\n", err)
 		}
 
+		log.Infof("size: %v", size)
+
 		log.Info("before reading all byte")
-		_, err = io.ReadFull(reader, buff[:size])
+		_, err = reader.Read(buff)
+		// _, err = io.ReadFull(reader, buff[1:size])
 		if err != nil {
 			t.Errorf("error reading full response: %v\n", err)
 		}
