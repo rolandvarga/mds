@@ -56,11 +56,10 @@ func TestServer(t *testing.T) {
 		clients[id] = internal.Client{ID: uint8(id), Conn: conn}
 	}
 
-	log.Info("client after: ", clients)
-
 	// range over clients, confirm they have the expected IDs & close connections
 	for _, c := range clients {
-		log.Info("starting with ", c)
+		log.Infof("checking client with id '%d'", c.ID)
+
 		_, err := c.Conn.Write([]byte("0"))
 		if err != nil {
 			t.Errorf("client couldn't request identity: %v\n", err)
@@ -89,21 +88,24 @@ func TestServer(t *testing.T) {
 		}
 
 		c.Conn.Close()
+
+		log.Infof("no errors found for client id '%d'\n", c.ID)
 	}
 
 	srv.Stop()
 
-	// TODO ignore client side for now
-	// TODO create connect function
-	// TODO confirm that server handles every message
 	// TODO how do we receive messages from existing clients? Threadpool?
 
-	// TODO test list
+	// TODO test concurrent requests
 
-	// TODO test message clients; but only parse messages from like 3 clients
+	// TODO test list messages
+
+	// TODO test message clients; but limit number of clients between 5-10
 
 	// TODO make sure can't connect more than max clients
 	// for cIdx := range internal.MAX_CLIENTS {
 	// 	client.connectToServeR()
 	// }
 }
+
+func connectToServer() {}
