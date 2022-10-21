@@ -76,7 +76,7 @@ func (srv *Server) Run() {
 		client, err := srv.addClient(conn)
 		if err != nil {
 			log.Errorf("%s: %s\n", ErrAddClient, err)
-			conn.Write([]byte("server is unable to add client add this time\n"))
+			conn.Write([]byte("server is unable to add client at this time\n"))
 			conn.Close()
 		}
 

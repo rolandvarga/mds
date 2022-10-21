@@ -1,22 +1,28 @@
 package internal
 
 import (
-	"encoding/binary"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 )
 
 // TODO add replies from server
 
-type MessageType int
+type MsgType int
 
 const (
-	Identity MessageType = iota
+	Identity MsgType = iota
 	ListClients
 	Message
 )
 
+type Response struct {
+	Type MsgType
+	Msg  string
+}
+
 type Request struct {
-	Type    MessageType
+	Type    MsgType
 	Message string // optional
 }
 
@@ -29,14 +35,11 @@ func BuildListClientsRequest() {}
 func BuildMessageRequest()     {}
 
 func BuildIdentityResponse(id uint8) []byte {
-	// TODO cleanup
-	out := make([]byte, 100)
-	msg := []byte(fmt.Sprintf("%d", id))
-	length := len(msg)
+	msg := Response{Type: Identity, Msg: fmt.Sprint(id)}
+	buff := new(bytes.Buffer)
 
-	fmt.Printf("msg: %v length: %d\n", msg, length)
+	gobobj := gob.NewEncoder(buff)
+	gobobj.Encode(msg)
 
-	binary.LittleEndian.PutUint16(out, uint16(length))
-
-	return append(out, msg...)
+	return buff.Bytes()
 }

@@ -1,8 +1,8 @@
 package test
 
 import (
-	"bufio"
-	"encoding/binary"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github/rolandvarga/mds/internal"
 	"net"
@@ -64,34 +64,22 @@ func TestServer(t *testing.T) {
 			t.Errorf("client couldn't request identity: %v\n", err)
 		}
 
-		buff := make([]byte, 100)
-		reader := bufio.NewReader(c.Conn)
+		// create a temp buffer
+		tmp := make([]byte, 500)
+		c.Conn.Read(tmp)
 
-		log.Info("before reading first byte")
-		size, err := reader.ReadByte()
-		if err != nil {
-			t.Errorf("error reading response size: %v\n", err)
+		// convert bytes into Buffer (which implements io.Reader/io.Writer)
+		tmpBuff := bytes.NewBuffer(tmp)
+		resp := new(internal.Response)
+
+		// creates a decoder object
+		decoder := gob.NewDecoder(tmpBuff)
+		decoder.Decode(resp)
+
+		if resp.Type != internal.Identity && resp.Msg != fmt.Sprint(c.ID) {
+			t.Errorf("received msg type '%v' with client id '%s', want type '%v' with id '%d'\n", resp.Type, resp.Msg, internal.Identity, c.ID)
 		}
-
-		log.Infof("size: %v", size)
-
-		log.Info("before reading all byte")
-		_, err = reader.Read(buff)
-		// _, err = io.ReadFull(reader, buff[1:size])
-		if err != nil {
-			t.Errorf("error reading full response: %v\n", err)
-		}
-
-		clientId := uint8(binary.BigEndian.Uint16(buff[:size]))
-
-		log.Info("before comparing bytes")
-		if clientId != c.ID {
-			t.Errorf("got client ID '%d' want '%d'\n", clientId, c.ID)
-		}
-
 		c.Conn.Close()
-
-		log.Infof("no errors found for client id '%d'\n", c.ID)
 	}
 
 	srv.Stop()
