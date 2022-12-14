@@ -1,2 +1,2 @@
 # mds
-Playing with an extremely simplified message delivery system
+Playing with a very simple message delivery system

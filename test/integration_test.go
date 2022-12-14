@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"github/rolandvarga/mds/internal"
 	"net"
 	"os"
 	"testing"
 
+	"github/rolandvarga/mds/internal"
+
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const SERVER_PORT = 7654
@@ -49,9 +52,8 @@ func TestServer(t *testing.T) {
 	// establish connections first
 	for id := 0; id < count; id++ {
 		conn, err := net.Dial("tcp", serverAddr)
-		if err != nil {
-			t.Errorf("error connecting to server: %v\n", err)
-		}
+		require.NoError(t, err)
+
 		clients[id] = internal.Client{ID: uint8(id), Conn: conn}
 	}
 
@@ -60,9 +62,7 @@ func TestServer(t *testing.T) {
 		log.Infof("checking client with id '%d'", c.ID)
 
 		_, err := c.Conn.Write([]byte("0"))
-		if err != nil {
-			t.Errorf("client couldn't request identity: %v\n", err)
-		}
+		require.NoError(t, err, "client couldn't request identity: %v\n", err)
 
 		// create a temp buffer
 		tmp := make([]byte, 500)
@@ -76,22 +76,22 @@ func TestServer(t *testing.T) {
 		decoder := gob.NewDecoder(tmpBuff)
 		decoder.Decode(resp)
 
-		if resp.Type != internal.Identity && resp.Msg != fmt.Sprint(c.ID) {
-			t.Errorf("received msg type '%v' with client id '%s', want type '%v' with id '%d'\n", resp.Type, resp.Msg, internal.Identity, c.ID)
-		}
+		errMsg := fmt.Sprintf("msg type '%v' client id '%s'\nwant type '%v' with id '%d'\n",
+			resp.Type, resp.Msg, internal.Identity, c.ID,
+		)
+
+		assert.Equal(t, internal.Identity, resp.Type, errMsg)
+		assert.Equal(t, fmt.Sprint(c.ID), resp.Msg, errMsg)
+
 		c.Conn.Close()
 	}
 
 	srv.Stop()
 
 	// TODO how do we receive messages from existing clients? Threadpool?
-
 	// TODO test concurrent requests
-
 	// TODO test list messages
-
 	// TODO test message clients; but limit number of clients between 5-10
-
 	// TODO make sure can't connect more than max clients
 	// for cIdx := range internal.MAX_CLIENTS {
 	// 	client.connectToServeR()

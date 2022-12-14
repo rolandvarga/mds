@@ -2,8 +2,10 @@ package internal
 
 import (
 	"net"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRemoveClient(t *testing.T) {
@@ -81,9 +83,7 @@ func TestRemoveClient(t *testing.T) {
 				}
 			}
 
-			if !reflect.DeepEqual(srv.clients, c.want) {
-				t.Errorf("removing client didn't produce expected client list;\ngot: %v\nwant: %v\n", srv.clients, c.want)
-			}
+			assert.Equal(t, c.want, srv.clients, "got: %v\nwant: %v", srv.clients, c.want)
 		})
 	}
 }
@@ -117,9 +117,7 @@ func TestListClientsExcept(t *testing.T) {
 
 			clients := srv.listClientIDsExcept(c.client)
 
-			if !reflect.DeepEqual(clients, c.want) {
-				t.Errorf("didn't receive expected client list;\ngot: %v\nwant: %v\n", clients, c.want)
-			}
+			assert.Equal(t, c.want, clients, "got: %v\nwant: %v", clients, c.want)
 		})
 	}
 }
@@ -208,13 +206,10 @@ func TestAddClientAtExpectedIndex(t *testing.T) {
 			serverConn, clientConn := net.Pipe()
 
 			client, err := srv.addClient(clientConn)
-			if err != nil {
-				t.Errorf("received an unexpected error while adding client: %v\n", err)
-			}
+			require.NoError(t, err)
 
-			if client.ID != c.wantClient.ID {
-				t.Errorf("received client has an unexpected ID;\ngot: %d\nwant: %d\nclients: %v", client.ID, c.wantClient.ID, srv.clients)
-			}
+			assert.Equal(t, c.wantClient.ID, client.ID, "got: %v\nwant: %v", client.ID, c.wantClient.ID)
+
 			serverConn.Close()
 			clientConn.Close()
 		})
