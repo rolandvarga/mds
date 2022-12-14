@@ -6,7 +6,8 @@ import (
 	"net"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const MAX_CLIENTS = 256
@@ -42,11 +43,9 @@ type Server struct {
 }
 
 func NewServer() Server {
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Level(zerolog.DebugLevel)
 
 	errChan := make(chan error)
 
@@ -69,13 +68,13 @@ func (srv *Server) Run() {
 	for running {
 		conn, err := srv.listener.Accept()
 		if err != nil {
-			log.Errorf("%s: %s\n", ErrAcceptConnection, err)
+			log.Error().Msgf("%s: %s\n", ErrAcceptConnection, err)
 		}
-		log.Infof("received a new connection: %v %v\n", conn, conn.RemoteAddr())
+		log.Info().Msgf("received a new connection: %v %v\n", conn, conn.RemoteAddr())
 
 		client, err := srv.addClient(conn)
 		if err != nil {
-			log.Errorf("%s: %s\n", ErrAddClient, err)
+			log.Error().Msgf("%s: %s\n", ErrAddClient, err)
 			conn.Write([]byte("server is unable to add client at this time\n"))
 			conn.Close()
 		}

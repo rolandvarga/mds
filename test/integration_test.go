@@ -10,7 +10,8 @@ import (
 
 	"github/rolandvarga/mds/internal"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,11 +20,9 @@ const SERVER_PORT = 7654
 
 func TestServer(t *testing.T) {
 	// -- --------- SETUP VARS ---------
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp: true,
-	})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.DebugLevel)
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Level(zerolog.DebugLevel)
 
 	serverAddr := fmt.Sprintf("localhost:%d", SERVER_PORT)
 
@@ -45,7 +44,7 @@ func TestServer(t *testing.T) {
 	// -- --------- CLIENT TESTS ---------
 	// test identity
 	count := 3
-	log.Infof("starting identity test with %d clients\n", count)
+	log.Info().Msgf("starting identity test with %d clients\n", count)
 
 	var clients = make([]internal.Client, count)
 
@@ -59,7 +58,7 @@ func TestServer(t *testing.T) {
 
 	// range over clients, confirm they have the expected IDs & close connections
 	for _, c := range clients {
-		log.Infof("checking client with id '%d'", c.ID)
+		log.Info().Msgf("checking client with id '%d'", c.ID)
 
 		_, err := c.Conn.Write([]byte("0"))
 		require.NoError(t, err, "client couldn't request identity: %v\n", err)
